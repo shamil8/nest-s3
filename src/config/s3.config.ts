@@ -9,7 +9,7 @@ export class S3Config {
   public endPoint: string;
   public awsConfig: AwsConfigInterface;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     this.bucketName = this.configService.get<string>(
       'AWS_BUCKET_NAME',
       'shop-logo',

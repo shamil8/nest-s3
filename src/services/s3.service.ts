@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { LoggerService } from '@app/logger/services/logger.service';
 import AWS from 'aws-sdk';
 import { Base64String } from 'aws-sdk/clients/wellarchitected';
-import { LoggerService } from '@app/logger/services/logger.service';
-
 import config from 'src/config';
+
 import { S3Config } from '../config/s3.config';
 
 @Injectable()
