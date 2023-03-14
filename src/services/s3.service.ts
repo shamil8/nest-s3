@@ -37,11 +37,11 @@ export class S3Service {
 
   async postObject(Key: string, Body: any): Promise<string> {
     try {
-      const result = await this.s3
+      await this.s3
         .upload({ Bucket: this.s3Config.bucketName, Key, Body })
         .promise();
 
-      return result.Location;
+      return this.getImageUrl(Key);
     } catch (err: any) {
       throw this.logger.error(err, {
         stack: this.postObject.name,
