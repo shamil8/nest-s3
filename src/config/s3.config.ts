@@ -6,16 +6,19 @@ import { AwsConfigInterface } from '../interfaces/aws-config.interface';
 @Injectable()
 export class S3Config {
   public bucketName: string;
-  public endPoint: string;
+  public endPoint?: string;
   public awsConfig: AwsConfigInterface;
 
   constructor(private readonly configService: ConfigService) {
     this.bucketName = this.configService.get<string>(
       'AWS_BUCKET_NAME',
-      'shop-logo',
+      'app-logo',
     );
 
-    this.endPoint = this.configService.getOrThrow<string>('AWS_END_POINT');
+    this.endPoint = this.configService.get<string | undefined>(
+      'AWS_END_POINT',
+      undefined,
+    );
 
     this.awsConfig = {
       region: this.configService.get<string>('AWS_REGION', 'us-east-1'),
