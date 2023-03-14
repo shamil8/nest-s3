@@ -16,3 +16,11 @@ yarn add aws-sdk
 ```yarn
 yarn remove aws-sdk
 ```
+
+### Env example
+```dotenv
+# AWS S3 module environments
+AWS_ACCESS_KEY_ID=Pyft**********
+AWS_SECRET_ACCESS_KEY=s3x5SaV**********
+AWS_END_POINT=https://storage.yourapp.com
+```
