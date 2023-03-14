@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { LoggerService } from '@app/logger/services/logger.service';
+import { ObjectOutputInterface } from '@app/s3/interfaces/object-output.interface';
 import AWS from 'aws-sdk';
-import { Base64String } from 'aws-sdk/clients/wellarchitected';
+import { Response } from 'express';
 import config from 'src/config';
 
 import { S3Config } from '../config/s3.config';
+
+export const S3_ROUT_PREFIX = 's3';
 
 @Injectable()
 export class S3Service {
@@ -23,7 +26,7 @@ export class S3Service {
     });
   }
 
-  async getObject(Key: string): Promise<Base64String> {
+  async getObject(Key: string): Promise<ObjectOutputInterface> {
     const result = await this.s3
       .getObject({ Bucket: this.s3Config.bucketName, Key })
       .promise();
@@ -32,25 +35,44 @@ export class S3Service {
       throw new NotFoundException('Image not found');
     }
 
-    return result.Body?.toString();
+    return {
+      file: result.Body as unknown as Buffer,
+      fileName: Key,
+      contentType: result.ContentType,
+    };
   }
 
-  async postObject(Key: string, Body: any): Promise<string> {
+  async uploadFile(key: string, body: Express.Multer.File): Promise<string> {
     try {
-      await this.s3
-        .upload({ Bucket: this.s3Config.bucketName, Key, Body })
+      const file = await this.s3
+        .upload({
+          Bucket: this.s3Config.bucketName,
+          Key: key,
+          Body: body.buffer,
+          ContentType: body.mimetype,
+          ACL: 'public-read',
+        })
         .promise();
 
-      return this.getImageUrl(Key);
+      return file.Location;
     } catch (err: any) {
       throw this.logger.error(err, {
-        stack: this.postObject.name,
+        stack: this.uploadFile.name,
         extra: err,
       });
     }
   }
 
-  getImageUrl(Key: string): string {
-    return `${config.appUrl}${config.routePrefix}/s3/${Key}`;
+  getFileUrl(key: string): string {
+    return `${config.appUrl}${config.routePrefix}/${S3_ROUT_PREFIX}/${key}`;
+  }
+
+  setUploadRes(res: Response, body: ObjectOutputInterface): void {
+    res.writeHead(200, {
+      'Content-Type': body.contentType || '',
+      'Content-Length': body.file.length,
+    });
+
+    res.end(body.file);
   }
 }
