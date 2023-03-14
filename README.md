@@ -5,15 +5,18 @@ The repository provides examples of the main toolkit used to write a basic servi
 ### Required
 
 1. aws-sdk
+2. @types/multer
 
 ### Add lib:
 ```yarn
 yarn add aws-sdk
+
+yarn add -D @types/multer
 ```
 
 ### Remove this lib:
 ```yarn
-yarn remove aws-sdk
+yarn remove aws-sdk @types/multer
 ```
 
 ### Env example
