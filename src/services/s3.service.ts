@@ -4,6 +4,7 @@ import { ObjectOutputInterface } from '@app/s3/interfaces/object-output.interfac
 import AWS from 'aws-sdk';
 import { Response } from 'express';
 import config from 'src/config';
+import { UserRole } from 'src/modules/auth/enums/user-role';
 
 import { S3Config } from '../config/s3.config';
 
@@ -11,6 +12,7 @@ export const S3_ROUT_PREFIX = 's3';
 
 @Injectable()
 export class S3Service {
+  private readonly FILE_KEY_SEPARATOR = '__';
   private readonly s3: AWS.S3;
 
   constructor(
@@ -63,6 +65,21 @@ export class S3Service {
     }
   }
 
+  async deleteFile(key: string): Promise<boolean> {
+    try {
+      await this.s3
+        .deleteObject({ Bucket: this.s3Config.bucketName, Key: key })
+        .promise();
+
+      return true;
+    } catch (err: any) {
+      throw this.logger.error(err, {
+        stack: this.uploadFile.name,
+        extra: err,
+      });
+    }
+  }
+
   getFileUrl(key: string): string {
     return `${config.appUrl}${config.routePrefix}/${S3_ROUT_PREFIX}/${key}`;
   }
@@ -74,5 +91,17 @@ export class S3Service {
     });
 
     res.end(body.file);
+  }
+
+  getKey(bodyId: string, realUserId: string, role: UserRole): string {
+    const [id, userId] = bodyId.split(this.FILE_KEY_SEPARATOR);
+    let key = `${id}${this.FILE_KEY_SEPARATOR}${realUserId}`;
+
+    /** Admin can upload user file or put file without user_id */
+    if (role === UserRole.ADMIN_ROLE) {
+      key = userId ? `${id}${this.FILE_KEY_SEPARATOR}${userId}` : id;
+    }
+
+    return key;
   }
 }

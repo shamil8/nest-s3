@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -18,7 +19,6 @@ import { wrongRequestApiResource } from '@app/crypto-utils/documentation/wrong-r
 import { IdParamDto } from '@app/crypto-utils/dto/id-param.dto';
 import { UploadFileCommand } from '@app/s3/dto/command/upload-file.command';
 import { Response } from 'express';
-import { UserRole } from 'src/modules/auth/enums/user-role';
 import { JwtAccessGuard } from 'src/modules/auth/guards/jwt-access.guard';
 import { RequestInterface } from 'src/modules/auth/interfaces/request.interface';
 
@@ -27,11 +27,9 @@ import { S3_ROUT_PREFIX, S3Service } from '../services/s3.service';
 @ApiTags('S3')
 @Controller(S3_ROUT_PREFIX)
 export class S3Controller {
-  private readonly FILE_KEY_SEPARATOR = '__';
-
   constructor(private readonly s3Service: S3Service) {}
 
-  @Get('/:id')
+  @Get(':id')
   @ApiOperation({
     summary: 'Get file by id',
     description: 'This route can call all users',
@@ -47,7 +45,7 @@ export class S3Controller {
     this.s3Service.setUploadRes(res, body);
   }
 
-  @Get('/:id/url')
+  @Get(':id/url')
   @ApiOperation({
     summary: 'Get file url by id',
     description: 'This route can call all users',
@@ -61,7 +59,7 @@ export class S3Controller {
   @Post()
   @ApiOperation({
     summary: 'Upload file',
-    description: 'This route can call platform users',
+    description: 'This route can call admin or user',
   })
   @UseGuards(JwtAccessGuard)
   @ApiResponse(wrongRequestApiResource)
@@ -72,14 +70,25 @@ export class S3Controller {
     @Request() { user }: RequestInterface,
     @Body() body: UploadFileCommand,
   ): Promise<string> {
-    const [id, userId] = body.id.split(this.FILE_KEY_SEPARATOR);
-    let key = `${id}${this.FILE_KEY_SEPARATOR}${user.id}`;
-
-    /** Admin can upload user file or put file without user_id */
-    if (user.role === UserRole.ADMIN_ROLE) {
-      key = userId ? `${id}${this.FILE_KEY_SEPARATOR}${userId}` : id;
-    }
+    const key = this.s3Service.getKey(body.id, user.id, user.role);
 
     return this.s3Service.uploadFile(key, img);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete file',
+    description: 'This route can call admin or user',
+  })
+  @UseGuards(JwtAccessGuard)
+  @ApiResponse(wrongRequestApiResource)
+  @ApiOkResponse({ type: Boolean })
+  async deleteFile(
+    @Request() { user }: RequestInterface,
+    @Param() param: IdParamDto,
+  ): Promise<boolean> {
+    const key = this.s3Service.getKey(param.id, user.id, user.role);
+
+    return this.s3Service.deleteFile(key);
   }
 }
