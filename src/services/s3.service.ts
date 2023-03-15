@@ -74,7 +74,7 @@ export class S3Service {
       return true;
     } catch (err: any) {
       throw this.logger.error(err, {
-        stack: this.uploadFile.name,
+        stack: this.deleteFile.name,
         extra: err,
       });
     }
