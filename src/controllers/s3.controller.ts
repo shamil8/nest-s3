@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   Post,
   Request,
@@ -12,10 +13,15 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ApiOkResponse } from '@nestjs/swagger/dist/decorators/api-response.decorator';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ApiFileResponse } from '@app/crypto-utils/decorators/api-file-response.decorator';
-import { wrongRequestApiResource } from '@app/crypto-utils/documentation/wrong-request-api-response';
 import { IdParamDto } from '@app/crypto-utils/dto/id-param.dto';
 import { UploadFileCommand } from '@app/s3/dto/command/upload-file.command';
 import { Response } from 'express';
@@ -24,7 +30,7 @@ import { RequestInterface } from 'src/modules/auth/interfaces/request.interface'
 
 import { S3_ROUT_PREFIX, S3Service } from '../services/s3.service';
 
-@ApiTags('S3')
+@ApiTags(S3_ROUT_PREFIX.toUpperCase())
 @Controller(S3_ROUT_PREFIX)
 export class S3Controller {
   constructor(private readonly s3Service: S3Service) {}
@@ -34,8 +40,11 @@ export class S3Controller {
     summary: 'Get file by id',
     description: 'This route can call all users',
   })
-  @ApiResponse(wrongRequestApiResource)
   @ApiFileResponse('image/png', 'image/*')
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Image not found',
+  })
   async getFileById(
     @Param() param: IdParamDto,
     @Res() res: Response,
@@ -50,8 +59,11 @@ export class S3Controller {
     summary: 'Get file url by id',
     description: 'This route can call all users',
   })
-  @ApiResponse(wrongRequestApiResource)
-  @ApiOkResponse({ type: String })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: String,
+    description: 'Return url to file',
+  })
   getFileUrl(@Param() param: IdParamDto): string {
     return this.s3Service.getFileUrl(param.id);
   }
@@ -62,9 +74,30 @@ export class S3Controller {
     description: 'This route can call admin or user',
   })
   @UseGuards(JwtAccessGuard)
-  @ApiResponse(wrongRequestApiResource)
-  @ApiOkResponse({ type: String })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: String,
+    description: 'Return uploaded file Location (id)',
+  })
   @UseInterceptors(FileInterceptor('img'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        img: {
+          type: 'string',
+          format: 'binary',
+        },
+        id: {
+          example: 'primaPramac_5',
+          type: 'string',
+        },
+      },
+      required: ['id', 'img'],
+    },
+  })
   async uploadFile(
     @UploadedFile() img: Express.Multer.File,
     @Request() { user }: RequestInterface,
@@ -81,8 +114,20 @@ export class S3Controller {
     description: 'This route can call admin or user',
   })
   @UseGuards(JwtAccessGuard)
-  @ApiResponse(wrongRequestApiResource)
-  @ApiOkResponse({ type: Boolean })
+  @ApiBearerAuth()
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: Boolean,
+    description: 'Return status deleted file',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'File not found',
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Access denied',
+  })
   async deleteFile(
     @Request() { user }: RequestInterface,
     @Param() param: IdParamDto,

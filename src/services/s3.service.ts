@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { LoggerService } from '@app/logger/services/logger.service';
 import { ObjectOutputInterface } from '@app/s3/interfaces/object-output.interface';
 import AWS from 'aws-sdk';
@@ -85,7 +85,7 @@ export class S3Service {
   }
 
   setUploadRes(res: Response, body: ObjectOutputInterface): void {
-    res.writeHead(200, {
+    res.writeHead(HttpStatus.OK, {
       'Content-Type': body.contentType || '',
       'Content-Length': body.file.length,
     });
