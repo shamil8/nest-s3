@@ -22,7 +22,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiFileResponse } from '@app/crypto-utils/decorators/api-file-response.decorator';
-import { IdParamDto } from '@app/crypto-utils/dto/id-param.dto';
+import { IdParamDto } from '@app/crypto-utils/dto/params/id-param.dto';
 import { UploadFileCommand } from '@app/s3/dto/command/upload-file.command';
 import { Response } from 'express';
 import { JwtAccessGuard } from 'src/modules/auth/guards/jwt-access.guard';
